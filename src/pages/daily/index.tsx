@@ -3,8 +3,10 @@ import { View, Text, Input, Textarea, Button, ScrollView } from '@tarojs/compone
 import styles from './index.module.scss';
 import classnames from 'classnames';
 import { useStore } from '@/store/useStore';
-import { SYMPTOM_LIST, getToday, formatDateCN, formatWeekdayCN } from '@/utils';
-import type { SymptomType } from '@/types';
+import { SYMPTOM_LIST, getToday, formatDateCN, formatWeekdayCN, MEAL_TYPE_LABELS, MEAL_ORDER } from '@/utils';
+import type { SymptomType, MealType } from '@/types';
+import MealCard from '@/components/MealCard';
+import EmptyState from '@/components/EmptyState';
 import dayjs from 'dayjs';
 
 const DailyPage: React.FC = () => {
@@ -92,6 +94,23 @@ const DailyPage: React.FC = () => {
     }
     return 0;
   }, [currentRecord, previousRecord]);
+
+  const dayMeals = useMemo(() => {
+    return mealRecords.filter(r => r.date === currentDate);
+  }, [mealRecords, currentDate]);
+
+  const groupedMeals = useMemo(() => {
+    const groups: Record<MealType, typeof dayMeals> = {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+      snack: []
+    };
+    dayMeals.forEach(m => {
+      if (groups[m.mealType]) groups[m.mealType].push(m);
+    });
+    return groups;
+  }, [dayMeals]);
 
   return (
     <ScrollView scrollY className={styles.page}>
@@ -242,6 +261,41 @@ const DailyPage: React.FC = () => {
           maxlength={200}
           autoHeight
         />
+      </View>
+
+      {/* 当日饮食总览 */}
+      <View className={styles.sectionCard}>
+        <Text className={styles.sectionTitle}>
+          <Text className={styles.sectionIcon}>🍱</Text>
+          当日饮食总览
+        </Text>
+        {dayMeals.length > 0 ? (
+          <View>
+            {MEAL_ORDER.map(mealType => {
+              const meals = groupedMeals[mealType];
+              if (meals.length === 0) return null;
+              return (
+                <View key={mealType} className={styles.mealTypeGroup}>
+                  <View className={styles.mealTypeHeader}>
+                    <Text className={styles.mealTypeDot}>●</Text>
+                    <Text className={styles.mealTypeLabel}>{MEAL_TYPE_LABELS[mealType]}</Text>
+                    <Text className={styles.mealTypeCount}>· {meals.length} 条</Text>
+                  </View>
+                  <View className={styles.mealGroupList}>
+                    {meals.map(record => (
+                      <MealCard key={record.id} record={record} />
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <EmptyState
+            title="当日暂无饮食记录"
+            description="切换到「饮食拍照」页面开始记录吧"
+          />
+        )}
       </View>
 
       {/* 历史记录说明 */}

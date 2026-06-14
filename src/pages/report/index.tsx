@@ -29,6 +29,7 @@ const ReportPage: React.FC = () => {
   const [searchTags, setSearchTags] = useState<FoodTagType[]>([]);
 
   const report = useMemo(() => computeWeeklyReport(weekOffset), [computeWeeklyReport, weekOffset]);
+  const prevReport = useMemo(() => computeWeeklyReport(weekOffset - 1), [computeWeeklyReport, weekOffset]);
   const weekDates = getWeekDates(weekOffset);
 
   // 每日高盐高糖数据（基于真实记录）
@@ -52,6 +53,53 @@ const ReportPage: React.FC = () => {
       date: weekDates[i]
     }));
   }, [report.trend, weekDates]);
+
+  // 周对比数据
+  const weekCompare = useMemo(() => {
+    const saltDiff = report.highSaltCount - prevReport.highSaltCount;
+    const sugarDiff = report.highSugarCount - prevReport.highSugarCount;
+    const qualDiff = report.qualifiedDays - prevReport.qualifiedDays;
+    const weightDiff = +(report.avgWeight - prevReport.avgWeight).toFixed(1);
+
+    return [
+      {
+        label: '高盐次数',
+        current: report.highSaltCount,
+        prev: prevReport.highSaltCount,
+        diff: saltDiff,
+        icon: '🧂',
+        unit: '次',
+        color: '#EF4444'
+      },
+      {
+        label: '高糖次数',
+        current: report.highSugarCount,
+        prev: prevReport.highSugarCount,
+        diff: sugarDiff,
+        icon: '🍰',
+        unit: '次',
+        color: '#F59E0B'
+      },
+      {
+        label: '达标天数',
+        current: report.qualifiedDays,
+        prev: prevReport.qualifiedDays,
+        diff: qualDiff,
+        icon: '✅',
+        unit: '天',
+        color: '#10B981'
+      },
+      {
+        label: '平均体重',
+        current: report.avgWeight.toFixed(1),
+        prev: prevReport.avgWeight.toFixed(1),
+        diff: weightDiff,
+        icon: '⚖️',
+        unit: 'kg',
+        color: '#3B82F6'
+      }
+    ];
+  }, [report, prevReport]);
 
   // 折线图SVG path
   const linePath = useMemo(() => {
@@ -218,6 +266,44 @@ const ReportPage: React.FC = () => {
           <Text className={styles.overviewSub}>
             日均饮水 {report.avgWaterCups.toFixed(1)} 杯
           </Text>
+        </View>
+      </View>
+
+      {/* 本周 vs 上周对比 */}
+      <View className={styles.chartCard}>
+        <View className={styles.chartHeader}>
+          <Text className={styles.chartTitle}>
+            <Text>📊</Text>
+            本周 vs 上周
+          </Text>
+          <Text className={styles.chartTag}>对比分析</Text>
+        </View>
+        <View className={styles.compareGrid}>
+          {weekCompare.map((item, index) => (
+            <View key={index} className={styles.compareCard}>
+              <View className={styles.compareIcon}>
+                <Text>{item.icon}</Text>
+              </View>
+              <Text className={styles.compareLabel}>{item.label}</Text>
+              <View className={styles.compareValues}>
+                <Text className={styles.compareCurrent} style={{ color: item.color }}>
+                  {item.current} <Text className={styles.compareUnit}>{item.unit}</Text>
+                </Text>
+              </View>
+              <View className={classnames(styles.compareDiff, {
+                [styles.diffUp]: item.diff > 0,
+                [styles.diffDown]: item.diff < 0,
+                [styles.diffNeutral]: item.diff === 0
+              })}>
+                {item.diff > 0 && <Text>↑ {item.diff}</Text>}
+                {item.diff < 0 && <Text>↓ {Math.abs(item.diff)}</Text>}
+                {item.diff === 0 && <Text>— 持平</Text>}
+              </View>
+              <View className={styles.comparePrev}>
+                <Text className={styles.comparePrevLabel}>上周 {item.prev}{item.unit}</Text>
+              </View>
+            </View>
+          ))}
         </View>
       </View>
 

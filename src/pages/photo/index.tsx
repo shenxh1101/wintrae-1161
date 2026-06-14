@@ -8,7 +8,7 @@ import MealCard from '@/components/MealCard';
 import EmptyState from '@/components/EmptyState';
 import { useStore } from '@/store/useStore';
 import { FOOD_TAGS, MEAL_TYPE_LABELS, getToday, formatFullDateCN } from '@/utils';
-import type { MealType, FoodTagType } from '@/types';
+import type { MealType, FoodTagType, MealRecord } from '@/types';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const PHOTO_IMAGE_IDS = [292, 312, 326, 401, 431, 570, 580, 625, 835, 1080];
@@ -27,7 +27,9 @@ const PhotoPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<FoodTagType[]>([]);
   const [note, setNote] = useState<string>('');
 
-  const { mealRecords, consecutiveDays, addMealRecord } = useStore();
+  const [editingRecord, setEditingRecord] = useState<MealRecord | null>(null);
+
+  const { mealRecords, consecutiveDays, addMealRecord, updateMealRecord, removeMealRecord } = useStore();
   const today = getToday();
 
   const todayRecords = useMemo(() => {
@@ -69,27 +71,65 @@ const PhotoPage: React.FC = () => {
     }
   };
 
+  const resetForm = () => {
+    setImageUrl('');
+    setSelectedTags([]);
+    setNote('');
+    setMealType(getDefaultMealType());
+    setEditingRecord(null);
+  };
+
+  const handleEditStart = (record: MealRecord) => {
+    setEditingRecord(record);
+    setMealType(record.mealType);
+    setImageUrl(record.imageUrl);
+    setSelectedTags(record.tags);
+    setNote(record.note || '');
+  };
+
   const handleSave = () => {
     if (!imageUrl) {
       Taro.showToast({ title: '请先添加餐食图片', icon: 'none' });
       return;
     }
 
-    addMealRecord({
-      date: today,
-      mealType,
-      imageUrl,
-      tags: selectedTags,
-      note: note.trim()
+    if (editingRecord) {
+      updateMealRecord(editingRecord.id, {
+        mealType,
+        imageUrl,
+        tags: selectedTags,
+        note: note.trim()
+      });
+      Taro.showToast({ title: '更新成功！', icon: 'success' });
+    } else {
+      addMealRecord({
+        date: today,
+        mealType,
+        imageUrl,
+        tags: selectedTags,
+        note: note.trim()
+      });
+      Taro.showToast({ title: '记录成功！', icon: 'success' });
+    }
+
+    console.log('[PhotoPage] Meal saved:', { mealType, tags: selectedTags, isEdit: !!editingRecord });
+    resetForm();
+  };
+
+  const handleDelete = () => {
+    if (!editingRecord) return;
+    Taro.showModal({
+      title: '确认删除',
+      content: '确定要删除这条餐食记录吗？删除后无法恢复。',
+      confirmColor: '#EF4444',
+      success: (res) => {
+        if (res.confirm) {
+          removeMealRecord(editingRecord.id);
+          Taro.showToast({ title: '已删除', icon: 'success' });
+          resetForm();
+        }
+      }
     });
-
-    console.log('[PhotoPage] Meal record saved:', { mealType, tags: selectedTags, hasNote: !!note });
-
-    Taro.showToast({ title: '记录成功！', icon: 'success' });
-    setImageUrl('');
-    setSelectedTags([]);
-    setNote('');
-    setMealType(getDefaultMealType());
   };
 
   return (
@@ -111,7 +151,14 @@ const PhotoPage: React.FC = () => {
 
       {/* 快速记录区域 */}
       <View className={styles.sectionCard}>
-        <Text className={styles.sectionTitle}>快速记录</Text>
+        <View className={styles.editHeader}>
+          <Text className={styles.sectionTitle}>
+            {editingRecord ? '📝 编辑记录' : '📷 快速记录'}
+          </Text>
+          {editingRecord && (
+            <Text className={styles.cancelEdit} onClick={resetForm}>取消</Text>
+          )}
+        </View>
 
         {/* 餐次选择 */}
         <View className={styles.mealSelector}>
@@ -175,25 +222,39 @@ const PhotoPage: React.FC = () => {
           autoHeight
         />
 
-        {/* 保存按钮 */}
-        <Button
-          className={styles.saveButton}
-          onClick={handleSave}
-        >
-          <Text className={styles.saveButtonText}>保存记录</Text>
-        </Button>
+        {/* 按钮区域 */}
+        <View className={styles.buttonRow}>
+          {editingRecord && (
+            <Button
+              className={classnames(styles.actionButton, styles.deleteButton)}
+              onClick={handleDelete}
+            >
+              <Text className={styles.deleteButtonText}>删除记录</Text>
+            </Button>
+          )}
+          <Button
+            className={classnames(styles.actionButton, styles.saveButton, { [styles.saveButtonFull]: !editingRecord })}
+            onClick={handleSave}
+          >
+            <Text className={styles.saveButtonText}>{editingRecord ? '保存修改' : '保存记录'}</Text>
+          </Button>
+        </View>
       </View>
 
       {/* 今日记录列表 */}
       <View className={styles.listSection}>
         <View className={styles.listHeader}>
           <Text className={styles.listTitle}>今日饮食记录</Text>
-          <Text className={styles.listCount}>共 {todayRecords.length} 条</Text>
+          <Text className={styles.listCount}>共 {todayRecords.length} 条 · 点击可编辑</Text>
         </View>
         {todayRecords.length > 0 ? (
           <View className={styles.recordList}>
             {todayRecords.map(record => (
-              <MealCard key={record.id} record={record} />
+              <MealCard
+                key={record.id}
+                record={record}
+                onClick={() => handleEditStart(record)}
+              />
             ))}
           </View>
         ) : (

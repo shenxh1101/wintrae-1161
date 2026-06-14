@@ -7,11 +7,12 @@ import type { MealRecord } from '@/types';
 
 interface MealCardProps {
   record: MealRecord;
+  onClick?: () => void;
 }
 
-const MealCard: React.FC<MealCardProps> = ({ record }) => {
+const MealCard: React.FC<MealCardProps> = ({ record, onClick }) => {
   return (
-    <View className={styles.mealCard}>
+    <View className={styles.mealCard} onClick={onClick}>
       <View className={styles.imageWrap}>
         <Image
           className={styles.mealImage}

@@ -347,3 +347,43 @@
   color: $color-text-white;
   font-weight: $font-weight-medium;
 }
+
+/* 当日饮食总览 */
+.mealTypeGroup {
+  margin-top: $spacing-md;
+
+  &:first-child {
+    margin-top: $spacing-md;
+  }
+}
+
+.mealTypeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: $spacing-sm;
+  padding: 0 4rpx;
+}
+
+.mealTypeDot {
+  font-size: 16rpx;
+  color: $color-primary;
+}
+
+.mealTypeLabel {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.mealTypeCount {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.mealGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+}

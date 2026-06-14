@@ -639,3 +639,87 @@
   @include text-ellipsis-multi(2);
   line-height: 1.4;
 }
+
+/* 周对比卡片 */
+.compareGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+  margin-top: $spacing-sm;
+}
+
+.compareCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md;
+  background-color: $color-bg-hover;
+  border-radius: $radius-lg;
+  transition: all $transition-fast;
+}
+
+.compareCard:active {
+  transform: scale(0.98);
+}
+
+.compareIcon {
+  font-size: 48rpx;
+  margin-bottom: 8rpx;
+}
+
+.compareLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: 8rpx;
+}
+
+.compareValues {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+  margin-bottom: 4rpx;
+}
+
+.compareCurrent {
+  font-size: 40rpx;
+  font-weight: $font-weight-bold;
+  line-height: 1.1;
+}
+
+.compareUnit {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  font-weight: $font-weight-normal;
+}
+
+.compareDiff {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  padding: 4rpx 12rpx;
+  border-radius: $radius-round;
+  margin-bottom: 4rpx;
+}
+
+.diffUp {
+  color: #EF4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.diffDown {
+  color: #10B981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.diffNeutral {
+  color: #6B7280;
+  background-color: rgba(107, 114, 128, 0.1);
+}
+
+.comparePrev {
+  margin-top: 4rpx;
+}
+
+.comparePrevLabel {
+  font-size: 20rpx;
+  color: $color-text-tertiary;
+}

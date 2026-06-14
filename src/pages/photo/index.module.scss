@@ -256,3 +256,74 @@
   flex-direction: column;
   gap: $spacing-md;
 }
+
+/* 编辑模式新增样式 */
+.editHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.cancelEdit {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-round;
+  background-color: $color-bg-hover;
+}
+
+.buttonRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}
+
+.actionButton {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-fast;
+}
+
+.deleteButton {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #EF4444;
+  border: 2rpx solid rgba(239, 68, 68, 0.3);
+}
+
+.deleteButton:active {
+  background-color: rgba(239, 68, 68, 0.15);
+  transform: scale(0.98);
+}
+
+.deleteButtonText {
+  color: #EF4444;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+}
+
+.saveButton {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  box-shadow: 0 8rpx 20rpx rgba(16, 185, 129, 0.3);
+}
+
+.saveButtonFull {
+  flex: none;
+  width: 100%;
+}
+
+.saveButton:active {
+  opacity: 0.92;
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.2);
+}
+
+.saveButtonText {
+  color: $color-text-white;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+}

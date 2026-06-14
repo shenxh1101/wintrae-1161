@@ -37,6 +37,8 @@ interface AppState {
   persist: () => void;
 
   addMealRecord: (record: Omit<MealRecord, 'id' | 'createdAt'>) => void;
+  updateMealRecord: (id: string, updates: Partial<MealRecord>) => void;
+  removeMealRecord: (id: string) => void;
   updateDailyRecord: (date: string, updates: Partial<DailyRecord>) => void;
   updateReminderSetting: (index: number, updates: Partial<ReminderSetting>) => void;
 
@@ -48,6 +50,7 @@ interface AppState {
   setCurrentDate: (date: string) => void;
   computeWeeklyReport: (weekOffset?: number) => WeeklyReport;
   recomputeConsecutiveDays: () => number;
+  recomputeDailyQualified: (date: string) => void;
   resetAll: () => void;
 }
 
@@ -110,7 +113,6 @@ export const useStore = create<AppState>((set, get) => ({
     } else {
       set({ _hydrated: true });
     }
-    // 立刻基于真实数据重算一次
     setTimeout(() => get().recomputeConsecutiveDays(), 30);
   },
 
@@ -126,9 +128,39 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
 
+  recomputeDailyQualified: (date) => {
+    const state = get();
+    const mealsOfDay = state.mealRecords.filter(m => m.date === date);
+    const hasBad = mealsOfDay.some(m =>
+      m.tags.includes('high-salt') || m.tags.includes('high-sugar')
+    );
+    const existing = state.dailyRecords.find(d => d.date === date);
+    if (existing) {
+      set((s) => ({
+        dailyRecords: s.dailyRecords.map(d =>
+          d.date === date ? { ...d, isQualified: !hasBad } : d
+        )
+      }));
+    } else if (mealsOfDay.length > 0) {
+      set((s) => ({
+        dailyRecords: [
+          {
+            date,
+            weight: null,
+            waterCups: 0,
+            symptoms: [],
+            symptomNote: '',
+            isQualified: !hasBad
+          },
+          ...s.dailyRecords
+        ]
+      }));
+    }
+  },
+
   recomputeConsecutiveDays: () => {
     const { dailyRecords, mealRecords } = get();
-    // 合并 dailyRecords 与 mealRecords 的判定：当天如果饮食有高盐/高糖就算不达标
+    // 先构建所有有记录天的达标状态
     const dateMap: Record<string, boolean> = {};
     dailyRecords.forEach(d => { dateMap[d.date] = d.isQualified; });
     mealRecords.forEach(m => {
@@ -137,28 +169,43 @@ export const useStore = create<AppState>((set, get) => ({
       else if (dateMap[m.date] === undefined) dateMap[m.date] = true;
     });
 
-    // 从今天往前数
+    // 找出所有有记录的日期，排序后找"最近一次中断"的位置
+    // 算法：从今天往前数，遇到"没记录"的天就视为中断边界，
+    //       遇到"不达标"的天就视为中断并重置计数，
+    //       遇到"达标"的天就累加计数。
+    //       关键：必须是"连续不间断且全达标"的记录天数，才算连续。
     let count = 0;
+    let hasStarted = false; // 标记是否已经开始连续序列（遇到了第一个有记录的天）
+
     for (let i = 0; i < 365; i++) {
       const date = dayjs().subtract(i, 'day').format('YYYY-MM-DD');
-      // 如果当天完全没有任何记录 → 视为未开始，不算也不算中断（首次使用场景）
-      if (!(date in dateMap)) {
-        // 如果是今天且还没记录，保持count不变
-        if (i === 0) continue;
-        // 如果前一天都没记录了，认为还没开始这个连续序列的计数
-        if (count === 0) continue;
-        break;
+      const hasRecord = date in dateMap;
+
+      if (!hasRecord) {
+        // 当天无任何记录
+        if (!hasStarted) {
+          // 还没开始连续序列 → 继续往前找（今天还没记录也不影响）
+          continue;
+        } else {
+          // 已经有连续记录了，但这一天断了（没记录）→ 视为中断，停止
+          break;
+        }
       }
+
+      // 当天有记录
+      hasStarted = true;
       if (dateMap[date]) {
+        // 当天达标 → 连续天数 +1
         count++;
       } else {
-        // 今天不达标，但之前已经有记录的话，要清0；若是历史某天不达标，中断计数
+        // 当天不达标 → 中断，停止
         break;
       }
     }
+
     set({ consecutiveDays: count });
     get().persist();
-    console.log('[Store] Recomputed consecutiveDays:', count);
+    console.log('[Store] Recomputed consecutiveDays:', count, 'hasStarted:', hasStarted);
     return count;
   },
 
@@ -169,46 +216,50 @@ export const useStore = create<AppState>((set, get) => ({
       createdAt: `${record.date} ${new Date().toTimeString().slice(0, 5)}`
     };
 
-    set((state) => {
-      const hasBadTag = record.tags.includes('high-salt') || record.tags.includes('high-sugar');
-      const newMealRecords = [newRecord, ...state.mealRecords];
+    set((state) => ({
+      mealRecords: [newRecord, ...state.mealRecords]
+    }));
 
-      // 处理 dailyRecords
-      let newDailyRecords = [...state.dailyRecords];
-      const existingDaily = newDailyRecords.find(d => d.date === record.date);
-      if (existingDaily) {
-        // 如果新加入的是不良标签，当天变为不达标
-        const stillQualified = existingDaily.isQualified && !hasBadTag;
-        // 再综合判断：当天所有餐食是否有任意不良标签
-        const allMealsOfDay = newMealRecords.filter(m => m.date === record.date);
-        const anyBad = allMealsOfDay.some(m =>
-          m.tags.includes('high-salt') || m.tags.includes('high-sugar')
-        );
-        const finalQualified = !anyBad;
-        newDailyRecords = newDailyRecords.map(d =>
-          d.date === record.date ? { ...d, isQualified: finalQualified } : d
-        );
-      } else {
-        newDailyRecords.unshift({
-          date: record.date,
-          weight: null,
-          waterCups: 0,
-          symptoms: [],
-          symptomNote: '',
-          isQualified: !hasBadTag
-        });
-      }
-
-      return {
-        mealRecords: newMealRecords,
-        dailyRecords: newDailyRecords
-      };
-    });
-
-    // 立刻重算连续天数
+    get().recomputeDailyQualified(record.date);
     setTimeout(() => get().recomputeConsecutiveDays(), 0);
     get().persist();
     console.log('[Store] Added mealRecord:', newRecord.id, newRecord.mealType, 'tags:', newRecord.tags);
+  },
+
+  updateMealRecord: (id, updates) => {
+    const existing = get().mealRecords.find(m => m.id === id);
+    if (!existing) return;
+
+    set((state) => ({
+      mealRecords: state.mealRecords.map(m =>
+        m.id === id ? { ...m, ...updates } : m
+      )
+    }));
+
+    // 重新计算原日期和新日期的达标状态
+    if (updates.date && updates.date !== existing.date) {
+      get().recomputeDailyQualified(existing.date);
+      get().recomputeDailyQualified(updates.date);
+    } else {
+      get().recomputeDailyQualified(existing.date);
+    }
+    setTimeout(() => get().recomputeConsecutiveDays(), 0);
+    get().persist();
+    console.log('[Store] Updated mealRecord:', id, 'updates:', updates);
+  },
+
+  removeMealRecord: (id) => {
+    const existing = get().mealRecords.find(m => m.id === id);
+    if (!existing) return;
+
+    set((state) => ({
+      mealRecords: state.mealRecords.filter(m => m.id !== id)
+    }));
+
+    get().recomputeDailyQualified(existing.date);
+    setTimeout(() => get().recomputeConsecutiveDays(), 0);
+    get().persist();
+    console.log('[Store] Removed mealRecord:', id, 'date:', existing.date);
   },
 
   updateDailyRecord: (date, updates) => set((state) => {
