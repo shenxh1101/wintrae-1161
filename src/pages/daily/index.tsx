@@ -3,7 +3,7 @@ import { View, Text, Input, Textarea, Button, ScrollView } from '@tarojs/compone
 import styles from './index.module.scss';
 import classnames from 'classnames';
 import { useStore } from '@/store/useStore';
-import { SYMPTOM_LIST, getToday, formatDate } from '@/utils';
+import { SYMPTOM_LIST, getToday, formatDateCN, formatWeekdayCN } from '@/utils';
 import type { SymptomType } from '@/types';
 import dayjs from 'dayjs';
 
@@ -102,10 +102,10 @@ const DailyPage: React.FC = () => {
         </View>
         <View className={styles.dateInfo}>
           <Text className={styles.dateMain}>
-            {formatDate(currentDate, 'MM月DD日')}
+            {formatDateCN(currentDate, 'MM月DD日')}
             {isToday && <Text className={styles.todayBadge}>今天</Text>}
           </Text>
-          <Text className={styles.dateSub}>{formatDate(currentDate, 'dddd')}</Text>
+          <Text className={styles.dateSub}>{formatWeekdayCN(currentDate)}</Text>
         </View>
         <View
           className={classnames(styles.navArrow, { [styles.navArrowDisabled]: isToday })}
