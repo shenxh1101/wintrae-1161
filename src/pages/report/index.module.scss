@@ -415,3 +415,227 @@
   color: $color-text-white;
   opacity: 0.8;
 }
+
+/* 柱状图新增 */
+.barsWrap {
+  display: flex;
+  gap: 6rpx;
+  align-items: flex-end;
+  height: 160rpx;
+  padding-bottom: 8rpx;
+}
+
+.barColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 28rpx;
+  height: 100%;
+  gap: 4rpx;
+}
+
+.barDayWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  margin-top: 4rpx;
+}
+
+.barBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 8rpx;
+  border-radius: $radius-round;
+  background-color: rgba(245, 158, 11, 0.15);
+  font-size: 18rpx;
+  font-weight: 600;
+  color: #D97706;
+}
+
+/* 折线图新增 */
+.pointDayWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rpx;
+}
+
+/* 历史检索弹窗 */
+.searchModalMask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.searchModal {
+  width: 100%;
+  height: 90vh;
+  background-color: $color-bg-page;
+  border-radius: $radius-xl $radius-xl 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.searchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-bottom: 2rpx solid $color-divider;
+}
+
+.searchTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.searchClose {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: $color-text-tertiary;
+  line-height: 1;
+}
+
+.searchFilters {
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-bottom: 2rpx solid $color-divider;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.filterRow {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.filterLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+}
+
+.datePickers {
+  display: flex;
+  align-items: center;
+}
+
+.datePickerBtn {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 $spacing-md;
+  background-color: $color-bg-hover;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: $font-size-md;
+}
+
+.filterTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.searchResultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  background-color: $color-bg-card;
+  border-bottom: 2rpx solid $color-divider;
+}
+
+.searchResultCount {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.resetBtn {
+  padding: 8rpx 20rpx;
+  border-radius: $radius-xs;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: $color-error;
+  font-size: $font-size-sm;
+}
+
+.searchResultList {
+  flex: 1;
+  padding: $spacing-md $spacing-lg;
+}
+
+.resultItem {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.resultImg {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: $radius-md;
+  flex-shrink: 0;
+}
+
+.resultInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resultMeal {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.resultDate {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.resultTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.resultNote {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis-multi(2);
+  line-height: 1.4;
+}

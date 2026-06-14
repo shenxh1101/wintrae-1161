@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, Switch, Button, ScrollView } from '@tarojs/components';
+import React, { useState } from 'react';
+import { View, Text, Image, Switch, Button, ScrollView, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import classnames from 'classnames';
@@ -11,8 +11,17 @@ const FamilyPage: React.FC = () => {
     familyMembers,
     familySharingEnabled,
     toggleFamilySharing,
+    addFamilyMember,
+    removeFamilyMember,
     updateFamilyMember
   } = useStore();
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addRelation, setAddRelation] = useState<string>('');
+  const [addPhone, setAddPhone] = useState('');
+  const [addCanView, setAddCanView] = useState(true);
+  const [addCanEdit, setAddCanEdit] = useState(false);
 
   const handleMasterToggle = (enabled: boolean) => {
     toggleFamilySharing();
@@ -33,29 +42,52 @@ const FamilyPage: React.FC = () => {
     });
   };
 
-  const handleAddFamily = () => {
+  const openAddForm = () => {
+    setShowAddForm(true);
+    setAddName('');
+    setAddRelation('');
+    setAddPhone('');
+    setAddCanView(true);
+    setAddCanEdit(false);
+  };
+
+  const closeAddForm = () => {
+    setShowAddForm(false);
+  };
+
+  const handleSelectRelation = () => {
     Taro.showActionSheet({
-      itemList: RELATION_LIST.map(r => `添加${r}`),
+      itemList: RELATION_LIST,
       success: (res) => {
-        Taro.showModal({
-          title: `添加${RELATION_LIST[res.tapIndex]}`,
-          editable: true,
-          placeholderText: '请输入家属姓名',
-          success: (modalRes) => {
-            if (modalRes.confirm && modalRes.content) {
-              Taro.showToast({
-                title: '添加功能开发中',
-                icon: 'none'
-              });
-              console.log('[FamilyPage] Add family member:', {
-                relation: RELATION_LIST[res.tapIndex],
-                name: modalRes.content
-              });
-            }
-          }
-        });
+        setAddRelation(RELATION_LIST[res.tapIndex]);
       }
     });
+  };
+
+  const handleConfirmAdd = () => {
+    if (!addName.trim()) {
+      Taro.showToast({ title: '请输入家属姓名', icon: 'none' });
+      return;
+    }
+    if (!addRelation) {
+      Taro.showToast({ title: '请选择家属关系', icon: 'none' });
+      return;
+    }
+    addFamilyMember({
+      name: addName.trim(),
+      relation: addRelation,
+      phone: addPhone || '13800000000',
+      canView: addCanView,
+      canEdit: addCanEdit
+    });
+    console.log('[FamilyPage] Added family member:', {
+      name: addName,
+      relation: addRelation,
+      canView: addCanView,
+      canEdit: addCanEdit
+    });
+    Taro.showToast({ title: `${addRelation}${addName}已添加`, icon: 'success' });
+    closeAddForm();
   };
 
   const handleContact = (name: string) => {
@@ -74,8 +106,9 @@ const FamilyPage: React.FC = () => {
       confirmColor: '#EF4444',
       success: (res) => {
         if (res.confirm) {
-          Taro.showToast({ title: '移除功能开发中', icon: 'none' });
-          console.log('[FamilyPage] Remove member:', id);
+          removeFamilyMember(id);
+          console.log('[FamilyPage] Removed member:', { id, name });
+          Taro.showToast({ title: '已移除', icon: 'success' });
         }
       }
     });
@@ -194,7 +227,7 @@ const FamilyPage: React.FC = () => {
           ))}
 
           {/* 添加家属按钮 */}
-          <Button className={styles.addBtn} onClick={handleAddFamily}>
+          <Button className={styles.addBtn} onClick={openAddForm}>
             <Text className={styles.addBtnText}>
               <Text style={{ fontSize: '36rpx' }}>＋</Text>
               添加家属成员
@@ -208,12 +241,97 @@ const FamilyPage: React.FC = () => {
           <Text className={styles.emptyDesc}>
             添加家属后，可将您的健康数据共享给家人，让慢病管理更有温度
           </Text>
-          <Button className={styles.addBtn} style={{ marginTop: '16rpx', width: '100%' }} onClick={handleAddFamily}>
+          <Button className={styles.addBtn} style={{ marginTop: '16rpx', width: '100%' }} onClick={openAddForm}>
             <Text className={styles.addBtnText}>
               <Text style={{ fontSize: '36rpx' }}>＋</Text>
               添加第一位家属
             </Text>
           </Button>
+        </View>
+      )}
+
+      {/* 添加表单遮罩 */}
+      {showAddForm && (
+        <View className={styles.modalMask} onClick={closeAddForm}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation?.()}>
+            <Text className={styles.modalTitle}>📝 添加家属成员</Text>
+
+            <View className={styles.formItem}>
+              <Text className={styles.formLabel}>家属姓名 <Text style={{ color: '#EF4444' }}>*</Text></Text>
+              <Input
+                className={styles.formInput}
+                placeholder="请输入姓名"
+                placeholderStyle="color: #9CA3AF"
+                value={addName}
+                onInput={(e) => setAddName(e.detail.value)}
+                maxlength={20}
+              />
+            </View>
+
+            <View className={styles.formItem}>
+              <Text className={styles.formLabel}>与您的关系 <Text style={{ color: '#EF4444' }}>*</Text></Text>
+              <View
+                className={classnames(styles.formInput, styles.formPicker)}
+                onClick={handleSelectRelation}
+              >
+                <Text style={{ color: addRelation ? '#1F2937' : '#9CA3AF' }}>
+                  {addRelation || '点击选择关系'}
+                </Text>
+                <Text style={{ color: '#9CA3AF', fontSize: '28rpx' }}>›</Text>
+              </View>
+            </View>
+
+            <View className={styles.formItem}>
+              <Text className={styles.formLabel}>联系电话</Text>
+              <Input
+                className={styles.formInput}
+                type="number"
+                placeholder="请输入手机号（选填）"
+                placeholderStyle="color: #9CA3AF"
+                value={addPhone}
+                onInput={(e) => setAddPhone(e.detail.value)}
+                maxlength={11}
+              />
+            </View>
+
+            <View className={styles.formPerm}>
+              <View className={styles.permRow}>
+                <View className={styles.permInfo}>
+                  <Text className={styles.permIcon}>👁️</Text>
+                  <View className={styles.permTextWrap}>
+                    <Text className={styles.permLabel}>查看权限</Text>
+                  </View>
+                </View>
+                <Switch
+                  checked={addCanView}
+                  color="#10B981"
+                  onChange={(e) => setAddCanView(e.detail.value)}
+                />
+              </View>
+              <View className={styles.permRow}>
+                <View className={styles.permInfo}>
+                  <Text className={styles.permIcon}>✏️</Text>
+                  <View className={styles.permTextWrap}>
+                    <Text className={styles.permLabel}>协助编辑</Text>
+                  </View>
+                </View>
+                <Switch
+                  checked={addCanEdit}
+                  color="#3B82F6"
+                  onChange={(e) => setAddCanEdit(e.detail.value)}
+                />
+              </View>
+            </View>
+
+            <View className={styles.modalActions}>
+              <Button className={styles.modalBtnCancel} onClick={closeAddForm}>
+                取消
+              </Button>
+              <Button className={styles.modalBtnConfirm} onClick={handleConfirmAdd}>
+                确认添加
+              </Button>
+            </View>
+          </View>
         </View>
       )}
 

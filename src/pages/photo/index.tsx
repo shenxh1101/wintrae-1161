@@ -7,7 +7,7 @@ import TagChip from '@/components/TagChip';
 import MealCard from '@/components/MealCard';
 import EmptyState from '@/components/EmptyState';
 import { useStore } from '@/store/useStore';
-import { FOOD_TAGS, MEAL_TYPE_LABELS, getToday, formatDate } from '@/utils';
+import { FOOD_TAGS, MEAL_TYPE_LABELS, getToday, formatFullDateCN } from '@/utils';
 import type { MealType, FoodTagType } from '@/types';
 
 const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -99,7 +99,7 @@ const PhotoPage: React.FC = () => {
         <View className={styles.streakHeader}>
           <View className={styles.greeting}>
             <Text className={styles.greetingText}>{greetingText}，今天也要健康饮食哦 💪</Text>
-            <Text className={styles.dateText}>{formatDate(new Date(), 'MM月DD日 dddd')}</Text>
+            <Text className={styles.dateText}>{formatFullDateCN(new Date())}</Text>
           </View>
         </View>
         <View className={styles.streakMain}>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Switch, ScrollView } from '@tarojs/components';
+import { View, Text, Switch, ScrollView, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import classnames from 'classnames';
 import { useStore } from '@/store/useStore';
 import type { ReminderSetting } from '@/types';
+import { addMinutes, isValidTime } from '@/utils';
 
 const ICON_BG_COLORS = [
   'rgba(16, 185, 129, 0.12)',
@@ -22,6 +23,9 @@ const MILESTONES = [7, 14, 30, 60, 100];
 const ReminderPage: React.FC = () => {
   const { reminderSettings, consecutiveDays, updateReminderSetting } = useStore();
 
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingTime, setEditingTime] = useState<string>('');
+
   const mealReminders = reminderSettings.slice(0, 3);
   const otherReminders = reminderSettings.slice(3);
 
@@ -35,37 +39,52 @@ const ReminderPage: React.FC = () => {
     });
   };
 
-  const handleTimeClick = (index: number, currentTime: string, label: string) => {
-    Taro.showActionSheet({
-      itemList: [
-        `提前 30 分钟 (${addMinutes(currentTime, -30)})`,
-        `保持原时间 (${currentTime})`,
-        `延后 30 分钟 (${addMinutes(currentTime, 30)})`,
-        '自定义时间...'
-      ],
-      success: (res) => {
-        let newTime = currentTime;
-        if (res.tapIndex === 0) newTime = addMinutes(currentTime, -30);
-        else if (res.tapIndex === 2) newTime = addMinutes(currentTime, 30);
-        else if (res.tapIndex === 3) {
-          Taro.showToast({ title: '自定义功能开发中', icon: 'none' });
-          return;
-        }
-        updateReminderSetting(index, { time: newTime });
-        console.log('[ReminderPage] Time updated:', { label, from: currentTime, to: newTime });
-        Taro.showToast({ title: '时间已更新', icon: 'success' });
-      }
-    });
+  const handleTimeClick = (index: number, currentTime: string) => {
+    setEditingIdx(index);
+    setEditingTime(currentTime);
   };
 
-  const addMinutes = (timeStr: string, minutes: number): string => {
-    const [h, m] = timeStr.split(':').map(Number);
-    let totalMin = h * 60 + m + minutes;
-    if (totalMin < 0) totalMin += 24 * 60;
-    if (totalMin >= 24 * 60) totalMin -= 24 * 60;
-    const newH = Math.floor(totalMin / 60);
-    const newM = totalMin % 60;
-    return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+  const closeEditModal = () => {
+    setEditingIdx(null);
+    setEditingTime('');
+  };
+
+  const handleQuickSet = (minutes: number) => {
+    if (editingIdx === null) return;
+    const baseTime = editingTime || reminderSettings[editingIdx].time;
+    setEditingTime(addMinutes(baseTime, minutes));
+  };
+
+  const handleHourChange = (val: string) => {
+    let h = parseInt(val) || 0;
+    if (h < 0) h = 0;
+    if (h > 23) h = 23;
+    const [, m] = editingTime.split(':');
+    setEditingTime(`${String(h).padStart(2, '0')}:${m || '00'}`);
+  };
+
+  const handleMinuteChange = (val: string) => {
+    let mi = parseInt(val) || 0;
+    if (mi < 0) mi = 0;
+    if (mi > 59) mi = 59;
+    const [h] = editingTime.split(':');
+    setEditingTime(`${h || '00'}:${String(mi).padStart(2, '0')}`);
+  };
+
+  const confirmTimeEdit = () => {
+    if (editingIdx === null) return;
+    if (!isValidTime(editingTime)) {
+      Taro.showToast({ title: '请输入正确的时间格式', icon: 'none' });
+      return;
+    }
+    updateReminderSetting(editingIdx, { time: editingTime });
+    console.log('[ReminderPage] Time updated:', {
+      index: editingIdx,
+      label: reminderSettings[editingIdx].label,
+      newTime: editingTime
+    });
+    Taro.showToast({ title: `已更新为 ${editingTime}`, icon: 'success' });
+    closeEditModal();
   };
 
   const getStreakMessage = (days: number): string => {
@@ -85,7 +104,7 @@ const ReminderPage: React.FC = () => {
           <View
             key={item.label}
             className={styles.settingItem}
-            onClick={() => handleTimeClick(realIndex, item.time, item.label)}
+            onClick={() => handleTimeClick(realIndex, item.time)}
           >
             <View
               className={styles.itemIconWrap}
@@ -109,13 +128,15 @@ const ReminderPage: React.FC = () => {
                 e.stopPropagation?.();
                 handleToggle(realIndex, e.detail.value);
               }}
-              onClick={(e) => e.stopPropagation?.()}
             />
           </View>
         );
       })}
     </View>
   );
+
+  const editingItem = editingIdx !== null ? reminderSettings[editingIdx] : null;
+  const [editH, editM] = editingTime ? editingTime.split(':') : ['00', '00'];
 
   return (
     <ScrollView scrollY className={styles.page}>
@@ -143,7 +164,7 @@ const ReminderPage: React.FC = () => {
         <View className={styles.milestoneList}>
           {MILESTONES.map(day => {
             const isReached = consecutiveDays >= day;
-            const isCurrent = !isReached && (day === MILESTONES.find(m => m > consecutiveDays) || MILESTONES[MILESTONES.length - 1]);
+            const isCurrent = !isReached && day === (MILESTONES.find(m => m > consecutiveDays) || MILESTONES[MILESTONES.length - 1]);
             return (
               <View
                 key={day}
@@ -193,11 +214,97 @@ const ReminderPage: React.FC = () => {
           <Text className={styles.tipsTitle}>关于提醒</Text>
           <Text className={styles.tipsText}>
             • 请允许系统发送通知权限，以便准时提醒{'\n'}
-            • 提醒时间可根据个人作息灵活调整{'\n'}
+            • 提醒时间可点击任意自定义修改{'\n'}
             • 坚持按时记录，养成健康生活习惯
           </Text>
         </View>
       </View>
+
+      {/* 时间编辑弹窗 */}
+      {editingIdx !== null && editingItem && (
+        <View className={styles.modalMask} onClick={closeEditModal}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation?.()}>
+            <Text className={styles.modalTitle}>
+              ⏰ 修改{editingItem.label}时间
+            </Text>
+
+            {/* 时间输入 */}
+            <View className={styles.timeEditWrap}>
+              <View className={styles.timeInputGroup}>
+                <Text className={styles.timeInputLabel}>时</Text>
+                <Input
+                  className={styles.timeInput}
+                  type="number"
+                  value={editH}
+                  onInput={(e) => handleHourChange(e.detail.value)}
+                  maxlength={2}
+                />
+              </View>
+              <Text className={styles.timeColon}>:</Text>
+              <View className={styles.timeInputGroup}>
+                <Text className={styles.timeInputLabel}>分</Text>
+                <Input
+                  className={styles.timeInput}
+                  type="number"
+                  value={editM}
+                  onInput={(e) => handleMinuteChange(e.detail.value)}
+                  maxlength={2}
+                />
+              </View>
+            </View>
+
+            {/* 快速调节 */}
+            <View className={styles.quickSetWrap}>
+              <Text className={styles.quickSetLabel}>快速调节</Text>
+              <View className={styles.quickSetBtns}>
+                <View className={styles.quickBtn} onClick={() => handleQuickSet(-60)}>
+                  <Text>-1小时</Text>
+                </View>
+                <View className={styles.quickBtn} onClick={() => handleQuickSet(-30)}>
+                  <Text>-30分</Text>
+                </View>
+                <View className={styles.quickBtn} onClick={() => handleQuickSet(-10)}>
+                  <Text>-10分</Text>
+                </View>
+                <View className={classnames(styles.quickBtn, styles.quickBtnPrimary)} onClick={() => handleQuickSet(10)}>
+                  <Text>+10分</Text>
+                </View>
+                <View className={classnames(styles.quickBtn, styles.quickBtnPrimary)} onClick={() => handleQuickSet(30)}>
+                  <Text>+30分</Text>
+                </View>
+                <View className={classnames(styles.quickBtn, styles.quickBtnPrimary)} onClick={() => handleQuickSet(60)}>
+                  <Text>+1小时</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* 常用时间 */}
+            <View className={styles.quickSetWrap}>
+              <Text className={styles.quickSetLabel}>常用时间</Text>
+              <View className={styles.presetBtns}>
+                {['06:00', '07:00', '07:30', '08:00', '09:00', '12:00', '12:30', '13:00', '18:00', '18:30', '19:00', '21:00'].map(t => (
+                  <View
+                    key={t}
+                    className={classnames(styles.presetBtn, { [styles.presetBtnActive]: editingTime === t })}
+                    onClick={() => setEditingTime(t)}
+                  >
+                    <Text>{t}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View className={styles.modalActions}>
+              <View className={styles.modalBtnCancel} onClick={closeEditModal}>
+                取消
+              </View>
+              <View className={styles.modalBtnConfirm} onClick={confirmTimeEdit}>
+                确认修改
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

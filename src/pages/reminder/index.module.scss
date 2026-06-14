@@ -283,3 +283,200 @@
   color: $color-text-tertiary;
   text-align: center;
 }
+
+/* Modal 遮罩 */
+.modalMask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: $spacing-lg;
+}
+
+.modalContent {
+  width: 100%;
+  max-width: 680rpx;
+  background-color: $color-bg-card;
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  text-align: center;
+}
+
+/* 时间编辑 */
+.timeEditWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background-color: $color-bg-hover;
+  border-radius: $radius-lg;
+}
+
+.timeInputGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.timeInputLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.timeInput {
+  width: 140rpx;
+  height: 120rpx;
+  font-size: 72rpx;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  text-align: center;
+  border: 2rpx solid $color-border;
+  box-sizing: border-box;
+}
+
+.timeColon {
+  font-size: 64rpx;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  line-height: 1;
+  padding-top: 48rpx;
+}
+
+/* 快速调节 */
+.quickSetWrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.quickSetLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+}
+
+.quickSetBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.quickBtn {
+  padding: 12rpx 20rpx;
+  background-color: $color-bg-hover;
+  border-radius: $radius-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:active {
+    background-color: $color-divider;
+    transform: scale(0.96);
+  }
+}
+
+.quickBtnPrimary {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: $color-primary;
+
+  &:active {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+}
+
+.presetBtns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-xs;
+}
+
+.presetBtn {
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-bg-hover;
+  border-radius: $radius-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:active {
+    background-color: $color-divider;
+  }
+}
+
+.presetBtnActive {
+  background-color: $color-primary;
+  color: $color-text-white;
+  font-weight: $font-weight-semibold;
+
+  &:active {
+    background-color: $color-primary-dark;
+  }
+}
+
+.modalActions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-sm;
+}
+
+.modalBtnCancel {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-md;
+  background-color: $color-bg-hover;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    background-color: $color-divider;
+  }
+}
+
+.modalBtnConfirm {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-md;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
+  box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
