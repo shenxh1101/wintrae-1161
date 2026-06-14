@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, Input, Textarea, Button, ScrollView } from '@tarojs/components';
+import { View, Text, Input, Textarea, Button, ScrollView, Image } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import classnames from 'classnames';
 import { useStore } from '@/store/useStore';
-import { SYMPTOM_LIST, getToday, formatDateCN, formatWeekdayCN, MEAL_TYPE_LABELS, MEAL_ORDER } from '@/utils';
-import type { SymptomType, MealType } from '@/types';
-import MealCard from '@/components/MealCard';
+import { SYMPTOM_LIST, getToday, formatDateCN, formatWeekdayCN, MEAL_TYPE_LABELS, MEAL_ORDER, FOOD_TAGS } from '@/utils';
+import type { SymptomType, MealType, FoodTagType, MealRecord } from '@/types';
+import TagChip from '@/components/TagChip';
 import EmptyState from '@/components/EmptyState';
 import dayjs from 'dayjs';
 
@@ -18,7 +19,9 @@ const DailyPage: React.FC = () => {
   const {
     dailyRecords,
     mealRecords,
-    updateDailyRecord
+    updateDailyRecord,
+    updateMealRecord,
+    removeMealRecord
   } = useStore();
 
   const currentRecord = useMemo(() => {
@@ -29,7 +32,14 @@ const DailyPage: React.FC = () => {
     return mealRecords.filter(r => r.date === currentDate).length;
   }, [mealRecords, currentDate]);
 
-  // 加载当前日期的记录到表单
+  const [editingRecord, setEditingRecord] = useState<MealRecord | null>(null);
+  const [editMealType, setEditMealType] = useState<MealType>('breakfast');
+  const [editImageUrl, setEditImageUrl] = useState<string>('');
+  const [editTags, setEditTags] = useState<FoodTagType[]>([]);
+  const [editNote, setEditNote] = useState<string>('');
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   useEffect(() => {
     if (currentRecord) {
       setWeightInput(currentRecord.weight ? currentRecord.weight.toString() : '');
@@ -40,7 +50,6 @@ const DailyPage: React.FC = () => {
       setSelectedSymptoms([]);
       setSymptomNote('');
     }
-    console.log('[DailyPage] Loaded record for date:', currentDate, currentRecord);
   }, [currentDate, currentRecord]);
 
   const isToday = currentDate === getToday();
@@ -49,6 +58,8 @@ const DailyPage: React.FC = () => {
     const newDate = dayjs(currentDate).add(offset, 'day').format('YYYY-MM-DD');
     if (dayjs(newDate).isAfter(dayjs())) return;
     setCurrentDate(newDate);
+    setEditingRecord(null);
+    setExpandedId(null);
   };
 
   const handleWeightChange = (value: string) => {
@@ -63,7 +74,6 @@ const DailyPage: React.FC = () => {
     const currentCups = currentRecord?.waterCups || 0;
     const newCups = Math.max(0, Math.min(15, currentCups + delta));
     updateDailyRecord(currentDate, { waterCups: newCups });
-    console.log('[DailyPage] Water updated:', { from: currentCups, to: newCups });
   };
 
   const toggleSymptom = (symptomKey: SymptomType) => {
@@ -111,6 +121,75 @@ const DailyPage: React.FC = () => {
     });
     return groups;
   }, [dayMeals]);
+
+  const openEditModal = (record: MealRecord) => {
+    setEditingRecord(record);
+    setEditMealType(record.mealType);
+    setEditImageUrl(record.imageUrl);
+    setEditTags([...record.tags]);
+    setEditNote(record.note || '');
+  };
+
+  const closeEditModal = () => {
+    setEditingRecord(null);
+  };
+
+  const toggleEditTag = (tag: FoodTagType) => {
+    setEditTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleEditImage = async () => {
+    try {
+      const res = await Taro.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      });
+      if (res.tempFilePaths?.[0]) {
+        setEditImageUrl(res.tempFilePaths[0]);
+      }
+    } catch (e) {
+      const ids = [292, 312, 326, 401, 431, 570, 580, 625, 835, 1080];
+      const randomId = ids[Math.floor(Math.random() * ids.length)];
+      setEditImageUrl(`https://picsum.photos/id/${randomId}/600/600`);
+    }
+  };
+
+  const saveEdit = () => {
+    if (!editingRecord) return;
+    updateMealRecord(editingRecord.id, {
+      mealType: editMealType,
+      imageUrl: editImageUrl,
+      tags: editTags,
+      note: editNote.trim()
+    });
+    Taro.showToast({ title: '已更新', icon: 'success' });
+    closeEditModal();
+  };
+
+  const handleDeleteEdit = (recordId?: string) => {
+    const targetId = recordId || editingRecord?.id;
+    if (!targetId) return;
+    Taro.showModal({
+      title: '确认删除',
+      content: '确定删除这条餐食记录吗？删除后无法恢复。',
+      confirmColor: '#EF4444',
+      success: (r) => {
+        if (r.confirm) {
+          removeMealRecord(targetId);
+          Taro.showToast({ title: '已删除', icon: 'success' });
+          closeEditModal();
+          if (expandedId === targetId) setExpandedId(null);
+        }
+      }
+    });
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  };
 
   return (
     <ScrollView scrollY className={styles.page}>
@@ -265,10 +344,15 @@ const DailyPage: React.FC = () => {
 
       {/* 当日饮食总览 */}
       <View className={styles.sectionCard}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>🍱</Text>
-          当日饮食总览
-        </Text>
+        <View className={styles.overviewHeader}>
+          <Text className={styles.sectionTitle}>
+            <Text className={styles.sectionIcon}>🍱</Text>
+            当日饮食总览
+          </Text>
+          {dayMeals.length > 0 && (
+            <Text className={styles.overviewHint}>点击展开，可编辑</Text>
+          )}
+        </View>
         {dayMeals.length > 0 ? (
           <View>
             {MEAL_ORDER.map(mealType => {
@@ -282,9 +366,76 @@ const DailyPage: React.FC = () => {
                     <Text className={styles.mealTypeCount}>· {meals.length} 条</Text>
                   </View>
                   <View className={styles.mealGroupList}>
-                    {meals.map(record => (
-                      <MealCard key={record.id} record={record} />
-                    ))}
+                    {meals.map(record => {
+                      const isExpanded = expandedId === record.id;
+                      return (
+                        <View key={record.id} className={styles.dailyMealCard}>
+                          <View className={styles.dailyMealMain} onClick={() => toggleExpand(record.id)}>
+                            <Image className={styles.dailyMealImg} src={record.imageUrl} mode="aspectFill" />
+                            <View className={styles.dailyMealInfo}>
+                              <View className={styles.dailyMealTop}>
+                                <Text className={styles.dailyMealTime}>{record.createdAt.slice(11)}</Text>
+                                <Text className={styles.dailyMealExpandIcon}>
+                                  {isExpanded ? '收起 ▲' : '展开 ▼'}
+                                </Text>
+                              </View>
+                              {record.tags.length > 0 && (
+                                <View className={styles.dailyMealTags}>
+                                  {record.tags.slice(0, 3).map(t => (
+                                    <TagChip key={t} tagKey={t} size="sm" />
+                                  ))}
+                                  {record.tags.length > 3 && (
+                                    <Text className={styles.moreTags}>+{record.tags.length - 3}</Text>
+                                  )}
+                                </View>
+                              )}
+                              {record.note && (
+                                <Text className={styles.dailyMealBriefNote}>
+                                  {isExpanded ? record.note : record.note.length > 30 ? record.note.slice(0, 30) + '...' : record.note}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+
+                          {isExpanded && (
+                            <View className={styles.dailyMealExpanded}>
+                              <View className={styles.expandedSection}>
+                                <Text className={styles.expandedLabel}>🏷️ 全部标签</Text>
+                                <View className={styles.expandedTags}>
+                                  {record.tags.length > 0 ? (
+                                    record.tags.map(t => (
+                                      <TagChip key={t} tagKey={t} size="md" />
+                                    ))
+                                  ) : (
+                                    <Text className={styles.expandedEmpty}>暂无标签</Text>
+                                  )}
+                                </View>
+                              </View>
+                              {record.note && (
+                                <View className={styles.expandedSection}>
+                                  <Text className={styles.expandedLabel}>📝 备注</Text>
+                                  <Text className={styles.expandedNote}>{record.note}</Text>
+                                </View>
+                              )}
+                              <View className={styles.expandedActions}>
+                                <Button
+                                  className={classnames(styles.expandBtn, styles.expandBtnEdit)}
+                                  onClick={() => openEditModal(record)}
+                                >
+                                  <Text className={styles.expandBtnEditText}>✏️ 编辑记录</Text>
+                                </Button>
+                                <Button
+                                  className={classnames(styles.expandBtn, styles.expandBtnDelete)}
+                                  onClick={handleDeleteEdit.bind(null, record.id)}
+                                >
+                                  <Text className={styles.expandBtnDeleteText}>🗑️ 删除</Text>
+                                </Button>
+                              </View>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               );
@@ -297,6 +448,96 @@ const DailyPage: React.FC = () => {
           />
         )}
       </View>
+
+      {/* 编辑弹窗 */}
+      {editingRecord && (
+        <View className={styles.editModalMask} onClick={closeEditModal}>
+          <View className={styles.editModal} onClick={(e) => e.stopPropagation?.()}>
+            <View className={styles.editModalHeader}>
+              <Text className={styles.editModalTitle}>✏️ 编辑餐食记录</Text>
+              <Text className={styles.editModalClose} onClick={closeEditModal}>×</Text>
+            </View>
+
+            <ScrollView scrollY className={styles.editModalBody}>
+              {/* 餐次选择 */}
+              <View className={styles.editField}>
+                <Text className={styles.editFieldLabel}>餐次类型</Text>
+                <View className={styles.editMealTypeRow}>
+                  {MEAL_ORDER.map(t => (
+                    <View
+                      key={t}
+                      className={classnames(styles.editMealTypeBtn, {
+                        [styles.editMealTypeActive]: editMealType === t
+                      })}
+                      onClick={() => setEditMealType(t)}
+                    >
+                      <Text className={classnames({ [styles.editMealTypeActiveText]: editMealType === t })}>
+                        {MEAL_TYPE_LABELS[t]}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* 图片 */}
+              <View className={styles.editField}>
+                <Text className={styles.editFieldLabel}>餐食图片</Text>
+                <View className={styles.editPhoto} onClick={handleEditImage}>
+                  {editImageUrl ? (
+                    <Image className={styles.editPhotoImg} src={editImageUrl} mode="aspectFill" />
+                  ) : (
+                    <Text>点击选择图片</Text>
+                  )}
+                </View>
+              </View>
+
+              {/* 标签 */}
+              <View className={styles.editField}>
+                <Text className={styles.editFieldLabel}>食物标签（可多选）</Text>
+                <View className={styles.editTags}>
+                  {FOOD_TAGS.map(t => (
+                    <TagChip
+                      key={t.key}
+                      tagKey={t.key}
+                      size="md"
+                      selected={editTags.includes(t.key)}
+                      onClick={() => toggleEditTag(t.key)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              {/* 备注 */}
+              <View className={styles.editField}>
+                <Text className={styles.editFieldLabel}>备注</Text>
+                <Textarea
+                  className={styles.editNoteInput}
+                  placeholder="添加备注..."
+                  value={editNote}
+                  onInput={(e) => setEditNote(e.detail.value)}
+                  maxlength={200}
+                  autoHeight
+                />
+              </View>
+            </ScrollView>
+
+            <View className={styles.editModalFooter}>
+              <Button
+                className={classnames(styles.editModalBtn, styles.editModalBtnDelete)}
+                onClick={handleDeleteEdit}
+              >
+                <Text className={styles.editModalBtnDeleteText}>删除</Text>
+              </Button>
+              <Button
+                className={classnames(styles.editModalBtn, styles.editModalBtnSave)}
+                onClick={saveEdit}
+              >
+                <Text className={styles.editModalBtnSaveText}>保存修改</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 历史记录说明 */}
       <View className={styles.sectionCard} style={{ marginBottom: 0 }}>

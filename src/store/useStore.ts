@@ -135,12 +135,27 @@ export const useStore = create<AppState>((set, get) => ({
       m.tags.includes('high-salt') || m.tags.includes('high-sugar')
     );
     const existing = state.dailyRecords.find(d => d.date === date);
+
     if (existing) {
-      set((s) => ({
-        dailyRecords: s.dailyRecords.map(d =>
-          d.date === date ? { ...d, isQualified: !hasBad } : d
-        )
-      }));
+      const isEmptyShell =
+        mealsOfDay.length === 0 &&
+        (existing.weight === null || existing.weight === undefined) &&
+        (existing.waterCups === 0 || existing.waterCups === undefined) &&
+        (!existing.symptoms || existing.symptoms.length === 0) &&
+        !existing.symptomNote;
+
+      if (isEmptyShell) {
+        // 餐食删空 + 体重/饮水/症状也都是空 → 这条dailyRecord是多余空壳，移除
+        set((s) => ({
+          dailyRecords: s.dailyRecords.filter(d => d.date !== date)
+        }));
+      } else {
+        set((s) => ({
+          dailyRecords: s.dailyRecords.map(d =>
+            d.date === date ? { ...d, isQualified: !hasBad } : d
+          )
+        }));
+      }
     } else if (mealsOfDay.length > 0) {
       set((s) => ({
         dailyRecords: [
@@ -160,45 +175,66 @@ export const useStore = create<AppState>((set, get) => ({
 
   recomputeConsecutiveDays: () => {
     const { dailyRecords, mealRecords } = get();
-    // 先构建所有有记录天的达标状态
-    const dateMap: Record<string, boolean> = {};
-    dailyRecords.forEach(d => { dateMap[d.date] = d.isQualified; });
+
+    // 第一步：构建"真实有记录"的达标状态
+    // 真实有记录 = (有 mealRecords) OR (dailyRecord 且不是空壳)
+    const dateRecordMap: Record<string, { qualified: boolean; real: boolean }> = {};
+
+    // 1. mealRecords 提供的记录（一定是真实记录）
     mealRecords.forEach(m => {
       const hasBad = m.tags.includes('high-salt') || m.tags.includes('high-sugar');
-      if (hasBad) dateMap[m.date] = false;
-      else if (dateMap[m.date] === undefined) dateMap[m.date] = true;
+      if (!dateRecordMap[m.date]) {
+        dateRecordMap[m.date] = { qualified: true, real: true };
+      }
+      if (hasBad) dateRecordMap[m.date].qualified = false;
     });
 
-    // 找出所有有记录的日期，排序后找"最近一次中断"的位置
-    // 算法：从今天往前数，遇到"没记录"的天就视为中断边界，
-    //       遇到"不达标"的天就视为中断并重置计数，
-    //       遇到"达标"的天就累加计数。
-    //       关键：必须是"连续不间断且全达标"的记录天数，才算连续。
+    // 2. dailyRecords 提供的记录（区分空壳与否）
+    dailyRecords.forEach(d => {
+      const isEmptyShell =
+        !mealRecords.some(m => m.date === d.date) &&
+        (d.weight === null || d.weight === undefined) &&
+        (d.waterCups === 0 || d.waterCups === undefined) &&
+        (!d.symptoms || d.symptoms.length === 0) &&
+        !d.symptomNote;
+
+      if (isEmptyShell) return; // 空壳 dailyRecord 不算真实记录
+
+      if (!dateRecordMap[d.date]) {
+        dateRecordMap[d.date] = { qualified: d.isQualified, real: true };
+      } else {
+        // 已有 mealRecord 记录，合并判定（任一不达标则不达标）
+        dateRecordMap[d.date].qualified =
+          dateRecordMap[d.date].qualified && d.isQualified;
+      }
+    });
+
+    // 第二步：从今天往前数，严格按真实记录计算连续达标
     let count = 0;
-    let hasStarted = false; // 标记是否已经开始连续序列（遇到了第一个有记录的天）
+    let hasStarted = false; // 是否遇到了第一天真实记录
 
     for (let i = 0; i < 365; i++) {
       const date = dayjs().subtract(i, 'day').format('YYYY-MM-DD');
-      const hasRecord = date in dateMap;
+      const entry = dateRecordMap[date];
+      const hasRealRecord = !!entry && entry.real;
 
-      if (!hasRecord) {
-        // 当天无任何记录
+      if (!hasRealRecord) {
+        // 当天没有任何真实记录
         if (!hasStarted) {
-          // 还没开始连续序列 → 继续往前找（今天还没记录也不影响）
+          // 还没开始 → 继续往前（今天没记第一餐时，显示 0）
           continue;
         } else {
-          // 已经有连续记录了，但这一天断了（没记录）→ 视为中断，停止
+          // 已开始但断档了 → 中断（断了几天后重新开始重新算）
           break;
         }
       }
 
-      // 当天有记录
+      // 当天有真实记录
       hasStarted = true;
-      if (dateMap[date]) {
-        // 当天达标 → 连续天数 +1
+      if (entry.qualified) {
         count++;
       } else {
-        // 当天不达标 → 中断，停止
+        // 不达标 → 中断
         break;
       }
     }

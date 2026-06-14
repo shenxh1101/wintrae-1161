@@ -101,6 +101,33 @@ const ReportPage: React.FC = () => {
     ];
   }, [report, prevReport]);
 
+  // 连续多周复盘（以当前选中周为基础，回溯 4 周）
+  const multiWeekData = useMemo(() => {
+    const weeks = [0, 1, 2, 3].map(i => {
+      const offset = weekOffset - i; // weekOffset 0=本周, -1=上周, 所以 weekOffset - 0, weekOffset - 1, weekOffset - 2, weekOffset - 3
+      const rep = computeWeeklyReport(offset);
+      const startMMDD = formatDateCN(rep.weekStart, 'MM/DD');
+      return {
+        offset,
+        label: offset === 0 ? '本周' : offset === 1 ? '上周' : offset === 2 ? '前2周' : '前3周',
+        shortLabel: startMMDD,
+        salt: rep.highSaltCount,
+        sugar: rep.highSugarCount,
+        qualified: rep.qualifiedDays,
+        weight: rep.avgWeight
+      };
+    }).reverse(); // 时间从左到右：远 → 近
+
+    const maxSaltSugar = Math.max(...weeks.map(w => Math.max(w.salt, w.sugar)), 1);
+    const maxQual = Math.max(...weeks.map(w => w.qualified), 1);
+    const weights = weeks.map(w => w.weight);
+    const minW = Math.min(...weights);
+    const maxW = Math.max(...weights);
+    const rangeW = maxW - minW || 1;
+
+    return { weeks, maxSaltSugar, maxQual, minW, maxW, rangeW };
+  }, [computeWeeklyReport, weekOffset]);
+
   // 折线图SVG path
   const linePath = useMemo(() => {
     const values = weightData.map(d => d.value);
@@ -304,6 +331,110 @@ const ReportPage: React.FC = () => {
               </View>
             </View>
           ))}
+        </View>
+      </View>
+
+      {/* 连续多周复盘视图 */}
+      <View className={styles.chartCard}>
+        <View className={styles.chartHeader}>
+          <Text className={styles.chartTitle}>
+            <Text>📉</Text>
+            连续多周趋势
+          </Text>
+          <Text className={styles.chartTag}>近 4 周复盘</Text>
+        </View>
+
+        {/* 高盐高糖次数趋势 */}
+        <View className={styles.trendSection}>
+          <Text className={styles.trendSectionTitle}>🧂🍰 高盐 / 高糖次数（越少越好）</Text>
+          <View className={styles.multiBars}>
+            {multiWeekData.weeks.map((w, i) => {
+              const saltH = (w.salt / multiWeekData.maxSaltSugar) * 100;
+              const sugarH = (w.sugar / multiWeekData.maxSaltSugar) * 100;
+              return (
+                <View key={i} className={styles.multiBarCol}>
+                  <View className={styles.multiBarPair}>
+                    <View className={styles.multiBarStack}>
+                      <View
+                        className={[styles.multiBar, styles.multiBarSalt].join(' ')}
+                        style={{ height: `${saltH}%`, opacity: saltH ? 1 : 0.15 }}
+                      >
+                        {w.salt > 0 && <Text className={styles.multiBarVal}>{w.salt}</Text>}
+                      </View>
+                      <Text className={styles.multiBarSub}>盐</Text>
+                    </View>
+                    <View className={styles.multiBarStack}>
+                      <View
+                        className={[styles.multiBar, styles.multiBarSugar].join(' ')}
+                        style={{ height: `${sugarH}%`, opacity: sugarH ? 1 : 0.15 }}
+                      >
+                        {w.sugar > 0 && <Text className={styles.multiBarVal}>{w.sugar}</Text>}
+                      </View>
+                      <Text className={styles.multiBarSub}>糖</Text>
+                    </View>
+                  </View>
+                  <Text className={styles.multiWeekLabel}>{w.shortLabel}</Text>
+                </View>
+              );
+            })}
+          </View>
+          <View className={styles.multiLegend}>
+            <View className={styles.multiLegendItem}>
+              <View className={styles.multiLegendDot} style={{ backgroundColor: '#EF4444' }} />
+              <Text>高盐</Text>
+            </View>
+            <View className={styles.multiLegendItem}>
+              <View className={styles.multiLegendDot} style={{ backgroundColor: '#F59E0B' }} />
+              <Text>高糖</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 达标天数趋势 */}
+        <View className={styles.trendSection}>
+          <Text className={styles.trendSectionTitle}>✅ 达标天数（越多越好，满分7天）</Text>
+          <View className={styles.qualBars}>
+            {multiWeekData.weeks.map((w, i) => {
+              const h = (w.qualified / 7) * 100;
+              return (
+                <View key={i} className={styles.qualCol}>
+                  <View className={styles.qualBarWrap}>
+                    <View
+                      className={styles.qualBarFill}
+                      style={{ height: `${h}%` }}
+                    >
+                      <Text className={styles.qualBarVal}>{w.qualified}</Text>
+                    </View>
+                  </View>
+                  <Text className={styles.multiWeekLabel}>{w.shortLabel}</Text>
+                  <Text className={styles.qualDaysText}>{w.qualified}/7天</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 体重趋势 */}
+        <View className={styles.trendSection} style={{ marginBottom: 0 }}>
+          <Text className={styles.trendSectionTitle}>⚖️ 平均体重趋势（kg）</Text>
+          <View className={styles.weightTrendWrap}>
+            {multiWeekData.weeks.map((w, i) => {
+              const percent = ((w.weight - multiWeekData.minW) / multiWeekData.rangeW) * 80 + 10;
+              const color = i === multiWeekData.weeks.length - 1 ? '#3B82F6' : '#93C5FD';
+              return (
+                <View key={i} className={styles.weightTrendCol}>
+                  <Text className={styles.weightTrendVal} style={{ color }}>{w.weight.toFixed(1)}</Text>
+                  <View className={styles.weightTrendBarWrap}>
+                    <View
+                      className={styles.weightTrendBar}
+                      style={{ width: `${percent}%`, backgroundColor: color }}
+                    />
+                  </View>
+                  <Text className={styles.multiWeekLabel}>{w.shortLabel}</Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       </View>
 
