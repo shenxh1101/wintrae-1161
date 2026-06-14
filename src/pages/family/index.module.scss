@@ -1,0 +1,321 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  padding: 0 $page-padding $spacing-xl * 2;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, $color-bg-page 40%);
+}
+
+/* 共享总开关卡片 */
+.shareMasterCard {
+  margin-top: $spacing-lg;
+  padding: $spacing-xl;
+  background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+  border-radius: $radius-xl;
+  box-shadow: 0 8rpx 24rpx rgba(139, 92, 246, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shareMasterInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.shareMasterTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.shareMasterDesc {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+}
+
+.masterSwitchWrap {
+  flex-shrink: 0;
+  margin-left: $spacing-md;
+}
+
+/* 分区标题 */
+.sectionHeader {
+  margin: $spacing-xl $spacing-xs $spacing-md;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.sectionCount {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+/* 家属列表 */
+.familyList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.familyCard {
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+  opacity: 1;
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.familyCardDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.familyHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-round;
+  flex-shrink: 0;
+  border: 4rpx solid $color-bg-hover;
+}
+
+.familyInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.familyName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.relationBadge {
+  display: inline-block;
+  padding: 2rpx 12rpx;
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8B5CF6;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.familyPhone {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  @include text-ellipsis;
+}
+
+/* 权限设置区 */
+.permSection {
+  padding-top: $spacing-md;
+  border-top: 2rpx solid $color-divider;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.permRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-sm 0;
+}
+
+.permInfo {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.permIcon {
+  font-size: 28rpx;
+  width: 48rpx;
+  text-align: center;
+}
+
+.permTextWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  min-width: 0;
+}
+
+.permLabel {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.permHint {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+/* 添加家属按钮 */
+.addBtn {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  margin-top: $spacing-md;
+  border: 3rpx dashed $color-border;
+  transition: all $transition-base;
+}
+
+.addBtnText {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.addBtn:active {
+  transform: scale(0.99);
+  background-color: $color-bg-hover;
+}
+
+/* 共享说明 */
+.infoCard {
+  margin-top: $spacing-xl;
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+.infoTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.infoItem {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: flex-start;
+}
+
+.infoBullet {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: $radius-round;
+  background-color: $color-primary;
+  margin-top: 10rpx;
+  flex-shrink: 0;
+}
+
+.infoText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 操作按钮组 */
+.actionRow {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-sm;
+  border-radius: $radius-button;
+  background-color: $color-bg-hover;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.96);
+    background-color: $color-divider;
+  }
+}
+
+.actionBtnDanger {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: $color-error;
+}
+
+/* 空状态 */
+.emptyWrap {
+  padding: $spacing-xl * 2 $spacing-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.emptyIcon {
+  font-size: 100rpx;
+}
+
+.emptyTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.emptyDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  text-align: center;
+  line-height: 1.5;
+}

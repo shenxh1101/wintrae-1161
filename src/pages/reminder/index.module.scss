@@ -1,0 +1,285 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  padding: 0 $page-padding $spacing-xl * 2;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, $color-bg-page 40%);
+}
+
+/* 连续达标激励卡片 */
+.streakCard {
+  margin-top: $spacing-lg;
+  padding: $spacing-xl;
+  background: linear-gradient(135deg, $color-warning 0%, #FBBF24 100%);
+  border-radius: $radius-xl;
+  box-shadow: 0 8rpx 24rpx rgba(245, 158, 11, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.streakCard::before {
+  content: '';
+  position: absolute;
+  top: -80rpx;
+  right: -60rpx;
+  width: 240rpx;
+  height: 240rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-round;
+}
+
+.streakCard::after {
+  content: '';
+  position: absolute;
+  bottom: -60rpx;
+  left: -40rpx;
+  width: 180rpx;
+  height: 180rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: $radius-round;
+}
+
+.streakInner {
+  position: relative;
+  z-index: 1;
+}
+
+.streakLabel {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: $spacing-xs;
+}
+
+.streakMainRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-bottom: $spacing-xs;
+}
+
+.streakNumber {
+  font-size: 88rpx;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  line-height: 1;
+}
+
+.streakUnit {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
+}
+
+.streakEmoji {
+  margin-left: $spacing-sm;
+  font-size: 52rpx;
+}
+
+.streakMsg {
+  font-size: $font-size-md;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.5;
+  margin-top: $spacing-sm;
+}
+
+/* 分组 */
+.sectionGroup {
+  margin-top: $spacing-xl;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: $spacing-md;
+  padding: 0 4rpx;
+}
+
+.groupIcon {
+  font-size: $font-size-lg;
+}
+
+.groupTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+/* 设置卡片 */
+.settingsCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+}
+
+.settingItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-lg;
+  transition: background-color $transition-fast;
+
+  &:not(:last-child) {
+    border-bottom: 2rpx solid $color-divider;
+  }
+
+  &:active {
+    background-color: $color-bg-hover;
+  }
+}
+
+.itemIconWrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+}
+
+.itemIcon {
+  font-size: 36rpx;
+}
+
+.itemInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.itemLabel {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.itemTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.timeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  background-color: $color-bg-hover;
+  border-radius: $radius-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+/* 提示卡片 */
+.tipsCard {
+  margin-top: $spacing-xl;
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.tipsIcon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-round;
+  background-color: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 36rpx;
+}
+
+.tipsContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 0;
+}
+
+.tipsTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.tipsText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.7;
+}
+
+/* 里程碑 */
+.milestoneCard {
+  margin-top: $spacing-lg;
+  padding: $spacing-lg;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+.milestoneHeader {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: $spacing-md;
+}
+
+.milestoneTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.milestoneList {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.milestoneItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: $spacing-md 8rpx;
+  border-radius: $radius-md;
+  background-color: $color-bg-hover;
+  transition: all $transition-base;
+}
+
+.milestoneItemActive {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%);
+  border: 2rpx solid $color-primary-light;
+}
+
+.milestoneItemReached {
+  opacity: 0.6;
+}
+
+.milestoneDay {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.milestoneActiveDay {
+  color: $color-primary;
+}
+
+.milestoneLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  text-align: center;
+}
